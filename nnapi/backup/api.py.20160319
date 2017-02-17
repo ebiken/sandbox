@@ -1,0 +1,82 @@
+from flask import Flask
+from flask_restful import Resource, Api, abort, reqparse, fields
+import os
+import netifaces
+
+app = Flask(__name__)
+api = Api(app)
+
+def abort_if_netdev_id_doesnt_exist(netdev_id):
+    if netdev_id not in netifaces.interfaces():
+        abort(404, message="netdev_id doesn't exist")
+
+def get_stats(netdev_id):
+    with open('/proc/net/dev') as fd:
+        lines = fd.readlines()
+        _, rx_cols, tx_cols = lines[1].rstrip().split('|')
+        rx_col = rx_cols.split()
+        tx_col = tx_cols.split()
+        for line in lines[2:]:
+            if line.find(netdev_id) < 0: continue
+            iface, data = line.split(':')
+            stats = data.split()
+    i = 0
+    stats_pairs = {}
+    for col_name in rx_col:
+        stats_pairs["rx-" + col_name] = int(stats[i])
+        i = i + 1
+    for col_name in tx_col:
+        stats_pairs["tx-" + col_name] = int(stats[i])
+        i = i + 1
+    return stats_pairs
+
+def get_addr_list(netdev_id):
+    ifdata = netifaces.ifaddresses(netdev_id)
+    addr_list = {}
+    addr_list['mac'] = ifdata.get(netifaces.AF_LINK)
+    addr_list['ipv4'] = ifdata.get(netifaces.AF_INET)
+    addr_list['ipv6'] = ifdata.get(netifaces.AF_INET6)
+    return addr_list
+
+class HelloWorld(Resource):
+    def get(self):
+        return {'hello': 'world'}
+
+class Date(Resource):
+    def get(self):
+        f = os.popen('date +"%Y/%m/%d"')
+        now = f.read()
+        return {'Date': now}
+
+class NetDevList(Resource):
+    def get(self):
+        return netifaces.interfaces()
+
+class NetDev(Resource):
+    def get(self, netdev_id):
+        abort_if_netdev_id_doesnt_exist(netdev_id)
+        #main
+        return_fields = {}
+        return_fields['address'] = get_addr_list(netdev_id)
+        return_fields['stats'] = get_stats(netdev_id)
+        return return_fields
+
+class NetDevAddress(Resource):
+    def get(self, netdev_id, addr_type):
+        abort_if_netdev_id_doesnt_exist(netdev_id)
+        addr_list = get_addr_list(netdev_id)
+        
+        if addr_type not in addr_list:
+            abort(404, message="addr_type doesn't exist")
+        #return {netdev_id: addr_type}
+        return addr_list[addr_type]
+
+api.add_resource(HelloWorld, '/')
+api.add_resource(Date, '/date')
+api.add_resource(NetDevList, '/netdev/')
+api.add_resource(NetDev, '/netdev/<netdev_id>/')
+api.add_resource(NetDevAddress, '/netdev/<netdev_id>/<addr_type>/')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
