@@ -20,6 +20,8 @@ struct Article{
     2: string title,
     3: string content,
     4: string author,
+	5: optional bool default_rule,
+	6: optional i32 priority,
 }
 
 const map<string,string> MAPCONSTANT = {'hello':'world', 'goodnight':'moon'}

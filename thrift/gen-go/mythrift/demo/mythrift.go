@@ -27,11 +27,15 @@ var _ = bytes.Equal
 //  - Title
 //  - Content
 //  - Author
+//  - DefaultRule
+//  - Priority
 type Article struct {
   ID int32 `thrift:"id,1" db:"id" json:"id"`
   Title string `thrift:"title,2" db:"title" json:"title"`
   Content string `thrift:"content,3" db:"content" json:"content"`
   Author string `thrift:"author,4" db:"author" json:"author"`
+  DefaultRule *bool `thrift:"default_rule,5" db:"default_rule" json:"default_rule,omitempty"`
+  Priority *int32 `thrift:"priority,6" db:"priority" json:"priority,omitempty"`
 }
 
 func NewArticle() *Article {
@@ -54,6 +58,28 @@ func (p *Article) GetContent() string {
 func (p *Article) GetAuthor() string {
   return p.Author
 }
+var Article_DefaultRule_DEFAULT bool
+func (p *Article) GetDefaultRule() bool {
+  if !p.IsSetDefaultRule() {
+    return Article_DefaultRule_DEFAULT
+  }
+return *p.DefaultRule
+}
+var Article_Priority_DEFAULT int32
+func (p *Article) GetPriority() int32 {
+  if !p.IsSetPriority() {
+    return Article_Priority_DEFAULT
+  }
+return *p.Priority
+}
+func (p *Article) IsSetDefaultRule() bool {
+  return p.DefaultRule != nil
+}
+
+func (p *Article) IsSetPriority() bool {
+  return p.Priority != nil
+}
+
 func (p *Article) Read(iprot thrift.TProtocol) error {
   if _, err := iprot.ReadStructBegin(); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
@@ -81,6 +107,14 @@ func (p *Article) Read(iprot thrift.TProtocol) error {
       }
     case 4:
       if err := p.ReadField4(iprot); err != nil {
+        return err
+      }
+    case 5:
+      if err := p.ReadField5(iprot); err != nil {
+        return err
+      }
+    case 6:
+      if err := p.ReadField6(iprot); err != nil {
         return err
       }
     default:
@@ -134,6 +168,24 @@ func (p *Article)  ReadField4(iprot thrift.TProtocol) error {
   return nil
 }
 
+func (p *Article)  ReadField5(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadBool(); err != nil {
+  return thrift.PrependError("error reading field 5: ", err)
+} else {
+  p.DefaultRule = &v
+}
+  return nil
+}
+
+func (p *Article)  ReadField6(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadI32(); err != nil {
+  return thrift.PrependError("error reading field 6: ", err)
+} else {
+  p.Priority = &v
+}
+  return nil
+}
+
 func (p *Article) Write(oprot thrift.TProtocol) error {
   if err := oprot.WriteStructBegin("Article"); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
@@ -142,6 +194,8 @@ func (p *Article) Write(oprot thrift.TProtocol) error {
     if err := p.writeField2(oprot); err != nil { return err }
     if err := p.writeField3(oprot); err != nil { return err }
     if err := p.writeField4(oprot); err != nil { return err }
+    if err := p.writeField5(oprot); err != nil { return err }
+    if err := p.writeField6(oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -187,6 +241,30 @@ func (p *Article) writeField4(oprot thrift.TProtocol) (err error) {
   return thrift.PrependError(fmt.Sprintf("%T.author (4) field write error: ", p), err) }
   if err := oprot.WriteFieldEnd(); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write field end error 4:author: ", p), err) }
+  return err
+}
+
+func (p *Article) writeField5(oprot thrift.TProtocol) (err error) {
+  if p.IsSetDefaultRule() {
+    if err := oprot.WriteFieldBegin("default_rule", thrift.BOOL, 5); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:default_rule: ", p), err) }
+    if err := oprot.WriteBool(bool(*p.DefaultRule)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.default_rule (5) field write error: ", p), err) }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 5:default_rule: ", p), err) }
+  }
+  return err
+}
+
+func (p *Article) writeField6(oprot thrift.TProtocol) (err error) {
+  if p.IsSetPriority() {
+    if err := oprot.WriteFieldBegin("priority", thrift.I32, 6); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:priority: ", p), err) }
+    if err := oprot.WriteI32(int32(*p.Priority)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.priority (6) field write error: ", p), err) }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 6:priority: ", p), err) }
+  }
   return err
 }
 
